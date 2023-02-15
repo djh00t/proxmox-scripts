@@ -189,3 +189,10 @@ if [ "$BRIDGE" != "" ]; then
     qm set $VMID --net0 virtio,bridge=$BRIDGE
 fi
 
+# Set notes on VM
+qm set $VMID --description "=======================================================
+ AUTOBUILT VM USING TEMPLATE $VMTID
+=======================================================
+VMID: $VMID
+NAME: $NAME 
+Created/Updated by $0 on $(date)"
