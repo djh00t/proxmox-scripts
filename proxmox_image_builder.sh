@@ -55,18 +55,28 @@ echo "FILENAME: $FILENAME"
 echo
 
 # Add qemu-guest-agent and net-tools to template
-echo "Installing qemu-guest-agent and net-tools into image..."
-echo
-virt-customize -a $FILENAME --install qemu-guest-agent,net-tools
-echo
-echo "Done"
-echo
+#echo "Installing qemu-guest-agent and net-tools into image..."
+#echo
+#virt-customize -a $FILENAME --install qemu-guest-agent,net-tools
+#echo
+#echo "Done"
+#echo
 
 # Add K8S cloud.cfg to template
-echo "Adding K8S cloud.cfg to image"
+echo "Download latest K8S cloud.cfg and scripts..."
+echo
+curl -s -o ./cloud/k8s_cloud.cfg https://gist.githubusercontent.com/fsg-gitbot/d4b80a55c744003bd5064d49db639bd0/raw/k8s-cloudinit.cfg
+curl -s -o ./cloud/scripts/per-boot/01-mount-points.sh https://gist.githubusercontent.com/fsg-gitbot/e8729b10e585992fdff35d247319d775/raw/01-mountpoints.sh
+curl -s -o ./cloud/scripts/per-boot/01-static-resolv-conf.sh https://gist.githubusercontent.com/fsg-gitbot/309947929f56abd075c644c000f01c8d/raw/01-static-resolv-conf.sh
+curl -s -o ./cloud/scripts/per-boot/01-set-hostname.sh https://gist.githubusercontent.com/fsg-gitbot/a54170a504b02e9f10be032689434646/raw/01-set-hostname.sh
+echo "Making scripts executable..."
+chmod +x ./cloud/scripts/per-boot/*.sh
+echo
+echo "Adding K8S cloud-init customizations to image.."
 echo
 cp cloud/k8s_cloud.cfg ./cloud.cfg
-virt-customize -a $FILENAME --copy-in ./cloud.cfg:/etc/cloud/
+virt-customize -a $FILENAME --commands-from-file ./cloud/k8s_mods.txt
+# virt-customize -a $FILENAME --copy-in ./cloud.cfg:/etc/cloud/
 rm cloud.cfg
 echo
 echo "Done"
@@ -95,5 +105,5 @@ echo "Done"
 # Cleanup
 rm $FILENAME
 echo
-echo "VM Image Build Compelted"
+echo "VM Image Build Completed!"
 echo
