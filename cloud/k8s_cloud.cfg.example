@@ -1,0 +1,475 @@
+#cloud-config
+# The top level settings are used as module
+# and base configuration.
+# A set of users which may be applied and/or used by various modules
+# when a 'default' entry is found it will reference the 'default_user'
+# from the distro configuration specified below
+users:
+  - default
+
+# If this is set, 'root' will not be able to ssh in and they
+# will get a message to login instead as the default $user
+disable_root: false
+
+# This will cause the set+update hostname module to not operate (if true)
+preserve_hostname: true
+
+# By default, the fingerprints of the authorized keys for the users
+# cloud-init adds are printed to the console. Setting
+# no_ssh_fingerprints to true suppresses this output.
+no_ssh_fingerprints: false
+
+# By default, (most) ssh host keys are printed to the console. Setting
+# emit_keys_to_console to false suppresses this output.
+ssh:
+  emit_keys_to_console: false
+
+# Update apt database on first boot (run 'apt-get update').
+# Note, if packages are given, or package_upgrade is true, then
+# update will be done independent of this setting.
+#
+# Default: false
+package_update: true
+
+# Upgrade the instance on first boot
+#
+# Default: false
+package_upgrade: true
+
+# apt_pipelining (configure Acquire::http::Pipeline-Depth)
+# Default: disables HTTP pipelining. Certain web servers, such
+# as S3 do not pipeline properly (LP: #948461).
+# Valid options:
+#   False/default: Disables pipelining for APT
+#   None/Unchanged: Use OS default
+#   Number: Set pipelining to some number (not recommended)
+apt_pipelining: False
+
+## apt config via system_info:
+# under the 'system_info', you can customize cloud-init's interaction
+# with apt.
+#  system_info:
+#    apt_get_command: [command, argument, argument]
+#    apt_get_upgrade_subcommand: dist-upgrade
+#
+# apt_get_command:
+#  To specify a different 'apt-get' command, set 'apt_get_command'.
+#  This must be a list, and the subcommand (update, upgrade) is appended to it.
+#  default is:
+#    ['apt-get', '--option=Dpkg::Options::=--force-confold',
+#     '--option=Dpkg::options::=--force-unsafe-io', '--assume-yes', '--quiet']
+#
+# apt_get_upgrade_subcommand: "dist-upgrade"
+#  Specify a different subcommand for 'upgrade. The default is 'dist-upgrade'.
+#  This is the subcommand that is invoked for package_upgrade.
+#
+# apt_get_wrapper:
+#   command: eatmydata
+#   enabled: [True, False, "auto"]
+#
+
+# Install additional packages on first boot
+#
+# Default: none
+#
+# if packages are specified, then package_update will be set to true
+
+packages:
+  - net-tools
+
+# "disk_setup": disk partitioning
+# --------------------------------
+
+# The disk_setup directive instructs Cloud-init to partition a disk. The format is:
+
+disk_setup:
+  /dev/vdb:
+    table_type: "mbr"
+    layout: true
+    overwrite: true
+
+# The format is a list of dicts of dicts. The first value is the name of the
+# device and the subsequent values define how to create and layout the
+# partition.
+# The general format is:
+#   disk_setup:
+#     <DEVICE>:
+#       table_type: 'mbr'
+#       layout: <LAYOUT|BOOL>
+#       overwrite: <BOOL>
+#
+# Where:
+#   <DEVICE>: The name of the device. 'ephemeralX' and 'swap' are special
+#               values which are specific to the cloud. For these devices
+#               Cloud-init will look up what the real devices is and then
+#               use it.
+#
+#               For other devices, the kernel device name is used. At this
+#               time only simply kernel devices are supported, meaning
+#               that device mapper and other targets may not work.
+#
+#               Note: At this time, there is no handling or setup of
+#               device mapper targets.
+#
+#   table_type=<TYPE>: Currently the following are supported:
+#                   'mbr': default and setups a MS-DOS partition table
+#                   'gpt': setups a GPT partition table
+#
+#               Note: At this time only 'mbr' and 'gpt' partition tables
+#                   are allowed. It is anticipated in the future that
+#                   we'll also have "RAID" to create a mdadm RAID.
+#
+#   layout={...}: The device layout. This is a list of values, with the
+#               percentage of disk that partition will take.
+#               Valid options are:
+#                   [<SIZE>, [<SIZE>, <PART_TYPE]]
+#
+#               Where <SIZE> is the _percentage_ of the disk to use, while
+#               <PART_TYPE> is the numerical value of the partition type.
+#
+#               The following setups two partitions, with the first
+#               partition having a swap label, taking 1/3 of the disk space
+#               and the remainder being used as the second partition.
+#                 /dev/xvdh':
+#                   table_type: 'mbr'
+#                   layout:
+#                     - [33,82]
+#                     - 66
+#                   overwrite: True
+#
+#               When layout is "true" it means single partition the entire
+#               device.
+#
+#               When layout is "false" it means don't partition or ignore
+#               existing partitioning.
+#
+#               If layout is set to "true" and overwrite is set to "false",
+#               it will skip partitioning the device without a failure.
+#
+#   overwrite=<BOOL>: This describes whether to ride with safetys on and
+#               everything holstered.
+#
+#               'false' is the default, which means that:
+#                   1. The device will be checked for a partition table
+#                   2. The device will be checked for a filesystem
+#                   3. If either a partition of filesystem is found, then
+#                       the operation will be _skipped_.
+#
+#               'true' is cowboy mode. There are no checks and things are
+#                   done blindly. USE with caution, you can do things you
+#                   really, really don't want to do.
+#
+#
+# fs_setup: Setup the filesystem
+# ------------------------------
+#
+# fs_setup describes the how the filesystems are supposed to look.
+
+fs_setup:
+  - cmd: blkid -o value -s TYPE %(device)s > /dev/null && echo "File system already exists on %(device)s" || mkfs.%(filesystem)s -q -L %(label)s %(device)s
+    label: longhorn1
+    filesystem: "xfs"
+    device: "/dev/vdb"
+    partition: none
+    overwrite: false
+  - cmd: blkid -o value -s TYPE %(device)s > /dev/null && echo "File system already exists on %(device)s" || mkfs.%(filesystem)s -q -L %(label)s %(device)s
+    label: longhorn2
+    filesystem: "xfs"
+    device: "/dev/vdc"
+    partition: none
+    overwrite: false
+  - cmd: blkid -o value -s TYPE %(device)s > /dev/null && echo "File system already exists on %(device)s" || mkfs.%(filesystem)s -q -L %(label)s %(device)s
+    label: longhorn3
+    filesystem: "xfs"
+    device: "/dev/vdd"
+    partition: none
+    overwrite: false
+  - cmd: blkid -o value -s TYPE %(device)s > /dev/null && echo "File system already exists on %(device)s" || mkfs.%(filesystem)s -q -L %(label)s %(device)s
+    label: longhorn4
+    filesystem: "xfs"
+    device: "/dev/vde"
+    partition: none
+    overwrite: false
+  # - cmd: mkfs -t %(filesystem)s -L %(label)s %(device)s
+  #   label: mylabl3
+  #   filesystem: 'btrfs'
+  #   device: '/dev/xvdh'
+
+# The general format is:
+#   fs_setup:
+#     - label: <LABEL>
+#       filesystem: <FS_TYPE>
+#       device: <DEVICE>
+#       partition: <PART_VALUE>
+#       overwrite: <OVERWRITE>
+#       replace_fs: <FS_TYPE>
+#
+# Where:
+#   <LABEL>: The filesystem label to be used. If set to None, no label is
+#     used.
+#
+#   <FS_TYPE>: The filesystem type. It is assumed that the there
+#     will be a "mkfs.<FS_TYPE>" that behaves likes "mkfs". On a standard
+#     Ubuntu Cloud Image, this means that you have the option of ext{2,3,4},
+#     and vfat by default.
+#
+#   <DEVICE>: The device name. Special names of 'ephemeralX' or 'swap'
+#     are allowed and the actual device is acquired from the cloud datasource.
+#     When using 'ephemeralX' (i.e. ephemeral0), make sure to leave the
+#     label as 'ephemeralX' otherwise there may be issues with the mounting
+#     of the ephemeral storage layer.
+#
+#     If you define the device as 'ephemeralX.Y' then Y will be interpetted
+#     as a partition value. However, ephermalX.0 is the _same_ as ephemeralX.
+#
+#   <PART_VALUE>:
+#     Partition definitions are overwritten if you use the '<DEVICE>.Y' notation.
+#
+#     The valid options are:
+#     "auto|any": tell cloud-init not to care whether there is a partition
+#       or not. Auto will use the first partition that does not contain a
+#       filesystem already. In the absence of a partition table, it will
+#       put it directly on the disk.
+#
+#       "auto": If a filesystem that matches the specification in terms of
+#       label, filesystem and device, then cloud-init will skip the creation
+#       of the filesystem.
+#
+#       "any": If a filesystem that matches the filesystem type and device,
+#       then cloud-init will skip the creation of the filesystem.
+#
+#       Devices are selected based on first-detected, starting with partitions
+#       and then the raw disk. Consider the following:
+#           NAME     FSTYPE LABEL
+#           xvdb
+#           |-xvdb1  ext4
+#           |-xvdb2
+#           |-xvdb3  btrfs  test
+#           \-xvdb4  ext4   test
+#
+#         If you ask for 'auto', label of 'test, and filesystem of 'ext4'
+#         then cloud-init will select the 2nd partition, even though there
+#         is a partition match at the 4th partition.
+#
+#         If you ask for 'any' and a label of 'test', then cloud-init will
+#         select the 1st partition.
+#
+#         If you ask for 'auto' and don't define label, then cloud-init will
+#         select the 1st partition.
+#
+#         In general, if you have a specific partition configuration in mind,
+#         you should define either the device or the partition number. 'auto'
+#         and 'any' are specifically intended for formatting ephemeral storage
+#         or for simple schemes.
+#
+#       "none": Put the filesystem directly on the device.
+#
+#       <NUM>: where NUM is the actual partition number.
+#
+#   <OVERWRITE>: Defines whether or not to overwrite any existing
+#     filesystem.
+#
+#     "true": Indiscriminately destroy any pre-existing filesystem. Use at
+#         your own peril.
+#
+#     "false": If an existing filesystem exists, skip the creation.
+#
+#   <REPLACE_FS>: This is a special directive, used for Microsoft Azure that
+#     instructs cloud-init to replace a filesystem of <FS_TYPE>. NOTE:
+#     unless you define a label, this requires the use of the 'any' partition
+#     directive.
+#
+# Behavior Caveat: The default behavior is to _check_ if the filesystem exists.
+#   If a filesystem matches the specification, then the operation is a no-op.
+
+# If you use datasource_list array, keep array items in a single line.
+# If you use multi line array, ds-identify script won't read array items.
+# Example datasource config
+# datasource:
+#    Ec2:
+#      metadata_urls: [ 'blah.com' ]
+#      timeout: 5 # (defaults to 50 seconds)
+#      max_wait: 10 # (defaults to 120 seconds)
+
+# set up mount points
+# 'mounts' contains a list of lists
+#  the inner list are entries for an /etc/fstab line
+#  ie : [ fs_spec, fs_file, fs_vfstype, fs_mntops, fs-freq, fs_passno ]
+#
+# default:
+# mounts:
+#  - [ ephemeral0, /mnt ]
+#  - [ swap, none, swap, sw, 0, 0 ]
+#
+# in order to remove a previously listed mount (ie, one from defaults)
+# list only the fs_spec.  For example, to override the default, of
+# mounting swap:
+# - [ swap ]
+# or
+# - [ swap, null ]
+#
+# - if a device does not exist at the time, an entry will still be
+#   written to /etc/fstab.
+# - '/dev' can be omitted for device names that begin with: xvd, sd, hd, vd
+# - if an entry does not have all 6 fields, they will be filled in
+#   with values from 'mount_default_fields' below.
+#
+# Note, that you should set 'nofail' (see man fstab) for volumes that may not
+# be attached at instance boot (or reboot).
+#
+mounts:
+  - [vdb, /data/longhorn1, "auto", "defaults,nofail", "0", "0"]
+  - [vdc, /data/longhorn2, "auto", "defaults,nofail", "0", "0"]
+  - [vdd, /data/longhorn3, "auto", "defaults,nofail", "0", "0"]
+  - [vde, /data/longhorn4, "auto", "defaults,nofail", "0", "0"]
+  - [swap, null]
+
+# run commands
+# default: none
+# runcmd contains a list of either lists or a string
+# each item will be executed in order at rc.local like level with
+# output to the console
+# - runcmd only runs during the first boot
+# - if the item is a list, the items will be properly executed as if
+#   passed to execve(3) (with the first arg as the command).
+# - if the item is a string, it will be simply written to the file and
+#   will be interpreted by 'sh'
+#
+# Note, that the list has to be proper yaml, so you have to quote
+# any characters yaml would eat (':' can be problematic)
+runcmd:
+  - mkdir -p /data/longhorn1 /data/longhorn2 /data/longhorn3 /data/longhorn4
+
+
+# boot commands
+# default: none
+# this is very similar to runcmd, but commands run very early
+# in the boot process, only slightly after a 'boothook' would run.
+# bootcmd should really only be used for things that could not be
+# done later in the boot process.  bootcmd is very much like
+# boothook, but possibly with more friendly.
+# - bootcmd will run on every boot
+# - the INSTANCE_ID variable will be set to the current instance id.
+# - you can use 'cloud-init-per' command to help only run once
+# bootcmd:
+#   - echo 192.168.1.130 us.archive.ubuntu.com >> /etc/hosts
+#   - [ cloud-init-per, once, mymkfs, mkfs, /dev/vdb ]
+
+# The modules that run in the 'init' stage
+cloud_init_modules:
+  - migrator
+  - seed_random
+  - bootcmd
+  - write-files
+  - growpart
+  - resizefs
+  # - disk_setup
+  - [ disk_setup, always ]
+  - mounts
+  - set_hostname
+  - update_hostname
+  - update_etc_hosts
+  - ca-certs
+  - rsyslog
+  - users-groups
+  - ssh
+
+# The modules that run in the 'config' stage
+cloud_config_modules:
+  - snap
+  - ubuntu_autoinstall
+  - ssh-import-id
+  - keyboard
+  - locale
+  - set-passwords
+  - grub-dpkg
+  - apt-pipelining
+  - apt-configure
+  - ubuntu-advantage
+  - ntp
+  - timezone
+  - disable-ec2-metadata
+  - runcmd
+
+# The modules that run in the 'final' stage
+cloud_final_modules:
+  - package-update-upgrade-install
+  - fan
+  - landscape
+  - ubuntu-drivers
+  - write-files-deferred
+  - reset_rmc
+  - refresh_rmc_and_interface
+  - scripts-vendor
+  - scripts-per-once
+  - scripts-per-boot
+  - scripts-per-instance
+  - scripts-user
+  - ssh-authkey-fingerprints
+  - keys-to-console
+  - install-hotplug
+  - phone-home
+  - final-message
+  - power-state-change
+
+# System and/or distro specific settings
+# (not accessible to handlers/transforms)
+system_info:
+  # This will affect which distro class gets used
+  distro: ubuntu
+  # Default user name + that default users groups (if added/used)
+  default_user:
+    name: ord
+    lock_passwd: True
+    gecos: Ubuntu
+    groups:
+      [
+        adm,
+        audio,
+        cdrom,
+        dialout,
+        dip,
+        floppy,
+        lxd,
+        netdev,
+        plugdev,
+        sudo,
+        video,
+      ]
+    sudo: ["ALL=(ALL) NOPASSWD:ALL"]
+    shell: /bin/bash
+  network:
+    renderers: ["netplan", "eni", "sysconfig"]
+    activators: ["netplan", "eni", "network-manager", "networkd"]
+  # Automatically discover the best ntp_client
+  ntp_client: auto
+  # Other config here will be given to the distro class and/or path classes
+  paths:
+    cloud_dir: /var/lib/cloud/
+    templates_dir: /etc/cloud/templates/
+  package_mirrors:
+    - arches: [i386, amd64]
+      failsafe:
+        primary: http://archive.ubuntu.com/ubuntu
+        security: http://security.ubuntu.com/ubuntu
+      search:
+        primary:
+          - http://%(ec2_region)s.ec2.archive.ubuntu.com/ubuntu/
+          - http://%(availability_zone)s.clouds.archive.ubuntu.com/ubuntu/
+          - http://%(region)s.clouds.archive.ubuntu.com/ubuntu/
+        security: []
+    - arches: [arm64, armel, armhf]
+      failsafe:
+        primary: http://ports.ubuntu.com/ubuntu-ports
+        security: http://ports.ubuntu.com/ubuntu-ports
+      search:
+        primary:
+          - http://%(ec2_region)s.ec2.ports.ubuntu.com/ubuntu-ports/
+          - http://%(availability_zone)s.clouds.ports.ubuntu.com/ubuntu-ports/
+          - http://%(region)s.clouds.ports.ubuntu.com/ubuntu-ports/
+        security: []
+    - arches: [default]
+      failsafe:
+        primary: http://ports.ubuntu.com/ubuntu-ports
+        security: http://ports.ubuntu.com/ubuntu-ports
+  ssh_svcname: ssh
