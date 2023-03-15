@@ -1,17 +1,28 @@
+# Add the following apt packages to the image
 install qemu-guest-agent,net-tools,plocate
+
+# Copy in the cloud-init configs
 copy-in ./cloud.cfg:/etc/cloud/
+
+# Create the per-boot script directory on template VM
 mkdir /etc/cloud/scripts/per-boot
 
+# Copy in the DNS fixup script - remove systemd-resolved and aliased resolv.conf
+# A jihad on systemd-resolved & a fatwa on systemd
 copy-in ./cloud/scripts/per-boot/01-static-resolv-conf.sh:/etc/cloud/scripts/per-boot/
 chmod 0777:/etc/cloud/scripts/per-boot/01-static-resolv-conf.sh
-#firstboot-command /etc/cloud/scripts/per-boot/01-static-resolve-conf.sh
 
+# Copy in the hostname script - auto set hostname based on primary NIC RDNS
 copy-in ./cloud/scripts/per-boot/01-set-hostname.sh:/etc/cloud/scripts/per-boot/
 chmod 0777:/etc/cloud/scripts/per-boot/01-set-hostname.sh
-#firstboot-command /etc/cloud/scripts/per-boot/01-set-hostname.sh
 
+# Copy in the mount points script - auto mount all additional volumes
 copy-in ./cloud/scripts/per-boot/01-mount-points.sh:/etc/cloud/scripts/per-boot/
 chmod 0777:/etc/cloud/scripts/per-boot/01-mount-points.sh
-#firstboot-command /etc/cloud/scripts/per-boot/01-mount-points.sh
 
-# update
+# Copy in environment standards to make admin life easier
+copy-in ./cloud/etc/bash.bashrc:/etc/bash.bashrc
+copy-in ./cloud/etc/skel/.bashrc:/etc/skel/.bashrc
+
+# Run APT update/upgrade on first boot
+update
