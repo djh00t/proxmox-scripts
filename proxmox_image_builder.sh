@@ -112,6 +112,8 @@ echo "Done"
 rm $FILENAME
 # Cleanup cloud.cfg
 rm cloud.cfg
+# Cleanup cloud/scripts/per-boot
+rm -rf ./cloud/scripts/per-boot/*.sh
 echo
 echo "VM Image Build Completed!"
 echo
