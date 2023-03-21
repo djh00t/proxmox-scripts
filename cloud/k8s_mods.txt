@@ -26,7 +26,7 @@ copy-in ./cloud/scripts/per-boot/01-set-mgmt-routes.sh:/etc/cloud/scripts/per-bo
 chmod 0777:/etc/cloud/scripts/per-boot/01-set-mgmt-routes.sh
 
 # Copy in environment standards to make admin life easier
-copy-in ./cloud/etc/bash.bashrc:/etc/bash.bashrc
+copy-in ./cloud/etc/bash.bashrc:/etc/
 copy-in ./cloud/etc/skel/.bashrc:/etc/skel/.bashrc
 
 # Run APT update/upgrade on first boot
