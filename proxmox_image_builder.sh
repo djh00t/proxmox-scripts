@@ -69,20 +69,26 @@ curl -s -o ./cloud/k8s_cloud.cfg https://gist.githubusercontent.com/fsg-gitbot/d
 curl -s -o ./cloud/scripts/per-boot/01-mount-points.sh https://gist.githubusercontent.com/fsg-gitbot/e8729b10e585992fdff35d247319d775/raw/01-mountpoints.sh
 curl -s -o ./cloud/scripts/per-boot/01-static-resolv-conf.sh https://gist.githubusercontent.com/fsg-gitbot/309947929f56abd075c644c000f01c8d/raw/01-static-resolv-conf.sh
 curl -s -o ./cloud/scripts/per-boot/01-set-hostname.sh https://gist.githubusercontent.com/fsg-gitbot/a54170a504b02e9f10be032689434646/raw/01-set-hostname.sh
+curl -s -o ./cloud/scripts/per-boot/01-set-mgmt-routes.sh https://gist.githubusercontent.com/fsg-gitbot/2eda62264e829345678662bc5477ef05/raw/01-set-mgmt-routes.sh
 echo "Making scripts executable..."
 chmod +x ./cloud/scripts/per-boot/*.sh
+
 echo
 echo "Adding K8S cloud-init customizations to image.."
 echo
+# Copy fresh cloud.cfg into current directory
 cp cloud/k8s_cloud.cfg ./cloud.cfg
+# Copy fresh cloud.cfg into snippets directory
+cp cloud/k8s_cloud.cfg /mnt/pve/nfs-ordnance/snippets/cloud.cfg
+# Push cloud-init customizations into image
 virt-customize -a $FILENAME --commands-from-file ./cloud/k8s_mods.txt
-# virt-customize -a $FILENAME --copy-in ./cloud.cfg:/etc/cloud/
-rm cloud.cfg
+
+# Set k8s_cloud.cfg as custom cloud-init file
+#qm set $IMAGE_ID --cicustom "user=nfs-ordnance:snippets/k8s_cloud.cfg"
+
 echo
 echo "Done"
 echo
-
-
 
 # Get image name for proxmox
 IMAGE_NAME=$(echo $FILENAME | cut -d'.' -f1 | cut -d'-' -f1-5)
@@ -104,6 +110,8 @@ echo "Done"
 
 # Cleanup
 rm $FILENAME
+# Cleanup cloud.cfg
+rm cloud.cfg
 echo
 echo "VM Image Build Completed!"
 echo
