@@ -8,6 +8,7 @@ source ./proxmox_tools.cfg
 
 # Set APP to RAW
 APP="RAW"
+CI_URL="https://gist.githubusercontent.com/fsg-gitbot/cc6f8ea71cd7387018928f30e84fd8ec/raw/vanilla-cloud.cfg"
 
 # Get all ubuntu release numbers and titles
 RELEASE_NUMBER_TITLE=$(curl -s https://cloud-images.ubuntu.com/releases/streams/v1/com.ubuntu.cloud:released:download.json | jq -r '.products[] | [.release_title, .release] | @tsv' | sort -nr | uniq)
@@ -81,13 +82,13 @@ echo
 
 
 #### Add K8S cloud.cfg to template
-###echo "Download latest K8S cloud.cfg and scripts..."
-###echo
-#### If $CI_URL is provided, download it
-###if [ -n "$CI_URL" ]; then
-###    curl -s -o ./cloud/cloud.cfg $CI_URL
-###fi
-###
+echo "Download latest K8S cloud.cfg and scripts..."
+echo
+# If $CI_URL is provided, download it
+if [ -n "$CI_URL" ]; then
+    curl -s -o ./cloud/cloud.cfg $CI_URL
+fi
+
 #### If $CI_SCRIPT_STORAGE is provided, download it
 ###if [ -n "$CI_SCRIPT_STORAGE" ]; then
 ###    curl -s -o ./cloud/scripts/per-boot/01-storage.sh $CI_SCRIPT_STORAGE
@@ -117,11 +118,14 @@ echo
 #### Push cloud-init customizations into image
 ###virt-customize -a $FILENAME --commands-from-file ./cloud/k8s_mods.txt
 virt-customize -a $FILENAME install qemu-guest-agent,net-tools,plocate,htop,mtr-tiny,iftop,iotop,tcpdump
-###
-###echo
-###echo "Done"
-###echo
-###
+
+# Copy in the cloud-init configs
+virt-customize -a $FILENAME copy-in ./cloud/cloud.cfg:/etc/cloud/
+
+echo
+echo "Done"
+echo
+
 # Get image name for proxmox
 IMAGE_NAME=$(echo $FILENAME | cut -d'.' -f1-2)
 
