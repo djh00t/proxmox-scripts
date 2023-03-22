@@ -112,15 +112,11 @@ fi
 ###echo "Making cloud scripts executable..."
 ###chmod +x ./cloud/scripts/per-boot/*.sh
 ###
-###echo
-###echo "Adding K8S cloud-init customizations to image.."
-###echo
-#### Push cloud-init customizations into image
-###virt-customize -a $FILENAME --commands-from-file ./cloud/k8s_mods.txt
-virt-customize -a $FILENAME install qemu-guest-agent,net-tools,plocate,htop,mtr-tiny,iftop,iotop,tcpdump
-
-# Copy in the cloud-init configs
-virt-customize -a $FILENAME copy-in ./cloud/cloud.cfg:/etc/cloud/
+echo
+echo "Adding Vanilla cloud-init customizations to image.."
+echo
+# Push cloud-init customizations into image
+virt-customize -a $FILENAME --commands-from-file ./cloud/vanilla_mods.txt
 
 echo
 echo "Done"
