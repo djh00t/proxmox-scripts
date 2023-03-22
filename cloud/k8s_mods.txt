@@ -9,7 +9,7 @@ mkdir /etc/cloud/scripts/
 mkdir /etc/cloud/scripts/per-boot
 
 # Copy in cloud scripts
-copy-in ./cloud/scripts/per-boot/:/etc/cloud/scripts/
+#copy-in ./cloud/scripts/per-boot/:/etc/cloud/scripts/
 
 
 # Copy in environment standards to make admin life easier
