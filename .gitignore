@@ -3,5 +3,7 @@ cloud/*.cfg
 cloud/scripts/per-boot/01-mount-points.sh
 cloud/scripts/per-boot/01-set-hostname.sh
 cloud/scripts/per-boot/01-static-resolv-conf.sh
-
 cloud/scripts/per-boot/01-set-hostname.sh
+cloud/scripts/per-boot/01-set-mgmt-routes.sh
+proxmox_tools.cfg
+com.ubuntu.cloud:released:download.json

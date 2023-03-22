@@ -1,31 +1,26 @@
 #!/bin/bash
 ###
-### Download and register Proxmox Template
+### Download, Customise and register Latest Version Ubuntu Proxmox Template
 ###
+
+# Import variables from ./proxmox_tools.cfg
+source ./proxmox_tools.cfg
+
 # If no APP is provided use default
 APP=$1
 if [ -z "$APP" ]; then
     APP=ubuntu
 fi
 
+# Find latest ubuntu LTS version number and release title
+LATEST_LTS_TITLE_RELEASE=$(curl -s https://cloud-images.ubuntu.com/releases/streams/v1/com.ubuntu.cloud:released:download.json | jq -r '.products[] | select(.release_title|endswith("LTS")) | [.release_title, .release] | @tsv' | sort -nr | head -n1)
 
-URL=$2
-# Work out latest Ubuntu LTS version name and number
-if [ "$APP" == "ubuntu-lts" ]; then
-    URL=https://cloud-images.ubuntu.com/$(curl -s https://cloud-images.ubuntu.com/releases/streams/v1/com.ubuntu.cloud:released:download.json | jq -r '.index."com.ubuntu.cloud:released:aws".current | .version + "/" + .products."server".architectures."amd64".formats."disk1.img".subarchitecture.default' | sed 's/ //g')/disk1.img
-fi
+# Extract version number and release title
+LATEST_LTS_NUMBER=$(echo $LATEST_LTS_TITLE_RELEASE | awk '{print $1}')
+LATEST_LTS_NAME=$(echo $LATEST_LTS_TITLE_RELEASE | awk '{print $3}')
 
-
-# Work out latest Ubuntu LTS image
-if [ "$APP" == "ubuntu" ]; then
-    URL=https://cloud-images.ubuntu.com/$(curl -s https://cloud-images.ubuntu.com/releases/streams/v1/com.ubuntu.cloud:released:download.json | jq -r '.index."com.ubuntu.cloud:released:aws".current | .version + "/" + .products."server".architectures."amd64".formats."disk1.img".subarchitecture.default' | sed 's/ //g')/disk1.img
-fi
-
-
-# If no URL is provided use default image
-if [ -z "$URL" ]; then
-    URL=https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img
-fi
+# Set URL for latest LTS image
+URL="https://cloud-images.ubuntu.com/releases/${LATEST_LTS_NAME}/release/ubuntu-${LATEST_LTS_NUMBER}-server-cloudimg-amd64.img"
 
 STORAGE=nfs-ordnance
 
@@ -54,14 +49,6 @@ FILENAME="$IMAGE_ID"-"$APP"-"$FILENAME"
 echo "FILENAME: $FILENAME"
 echo
 
-# Add qemu-guest-agent and net-tools to template
-#echo "Installing qemu-guest-agent and net-tools into image..."
-#echo
-#virt-customize -a $FILENAME --install qemu-guest-agent,net-tools
-#echo
-#echo "Done"
-#echo
-
 # Add K8S cloud.cfg to template
 echo "Download latest K8S cloud.cfg and scripts..."
 echo
@@ -82,9 +69,6 @@ cp cloud/k8s_cloud.cfg ./cloud.cfg
 cp cloud/k8s_cloud.cfg /mnt/pve/nfs-ordnance/snippets/cloud.cfg
 # Push cloud-init customizations into image
 virt-customize -a $FILENAME --commands-from-file ./cloud/k8s_mods.txt
-
-# Set k8s_cloud.cfg as custom cloud-init file
-#qm set $IMAGE_ID --cicustom "user=nfs-ordnance:snippets/k8s_cloud.cfg"
 
 echo
 echo "Done"
