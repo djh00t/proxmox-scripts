@@ -6,23 +6,44 @@
 # Import variables from ./proxmox_tools.cfg
 source ./proxmox_tools.cfg
 
-# If no APP is provided use default
-APP=$1
-if [ -z "$APP" ]; then
-    APP=ubuntu
-fi
+# Get all ubuntu release numbers and titles
+RELEASE_NUMBER_TITLE=$(curl -s https://cloud-images.ubuntu.com/releases/streams/v1/com.ubuntu.cloud:released:download.json | jq -r '.products[] | [.release_title, .release] | @tsv' | sort -nr | uniq)
 
 # Find latest ubuntu LTS version number and release title
-LATEST_LTS_TITLE_RELEASE=$(curl -s https://cloud-images.ubuntu.com/releases/streams/v1/com.ubuntu.cloud:released:download.json | jq -r '.products[] | select(.release_title|endswith("LTS")) | [.release_title, .release] | @tsv' | sort -nr | head -n1)
+LATEST_LTS=$(echo "$RELEASE_NUMBER_TITLE" | grep "LTS" | head -n1)
 
-# Extract version number and release title
-LATEST_LTS_NUMBER=$(echo $LATEST_LTS_TITLE_RELEASE | awk '{print $1}')
-LATEST_LTS_NAME=$(echo $LATEST_LTS_TITLE_RELEASE | awk '{print $3}')
+# If $UBUNTU_RELEASE_NUMBER is provided make sure it is a valid release number
+if [ -n "$UBUNTU_RELEASE_NUMBER" ]; then
+    # Check if $UBUNTU_RELEASE_NUMBER is a valid release number
+    if [[ $(echo "$RELEASE_NUMBER_TITLE" | grep "$UBUNTU_RELEASE_NUMBER") ]]; then
+        # If $UBUNTU_RELEASE_NUMBER is a valid release number use it
+        RELEASE_NUMBER=$UBUNTU_RELEASE_NUMBER
+        echo "Using provided release number: $RELEASE_NUMBER"
+        echo
+    else
+        # If $UBUNTU_RELEASE_NUMBER is not a valid release number use latest LTS
+        RELEASE_NUMBER=$(echo $LATEST_LTS | awk '{print $1}')
+        echo "Provided release number is not valid."
+        echo "Using latest LTS release number: $RELEASE_NUMBER"
+        echo
+    fi
+else
+    # If $UBUNTU_RELEASE_NUMBER is not provided use latest LTS
+    RELEASE_NUMBER=$(echo $LATEST_LTS | awk '{print $1}')
+    echo "Using latest LTS release number: $RELEASE_NUMBER"
+    echo
+fi
+
+# Lookup release name for $RELEASE_NUMBER
+echo "Looking up release name for $RELEASE_NUMBER..."
+RELEASE_NAME=$(echo "$RELEASE_NUMBER_TITLE" | grep $RELEASE_NUMBER | awk '{print $NF}')
+echo
+echo "Release Name: $RELEASE_NAME"
 
 # Set URL for latest LTS image
-URL="https://cloud-images.ubuntu.com/releases/${LATEST_LTS_NAME}/release/ubuntu-${LATEST_LTS_NUMBER}-server-cloudimg-amd64.img"
-
-STORAGE=nfs-ordnance
+URL="https://cloud-images.ubuntu.com/releases/${RELEASE_NAME}/release/ubuntu-${RELEASE_NUMBER}-server-cloudimg-amd64.img"
+echo "URL: $URL"
+echo
 
 # Get highest vm id from proxmox
 HIGHEST_ID=$(qm list | tail -n +2 | awk '{print $1}' | sort -n | tail -n 1)
@@ -41,32 +62,55 @@ wget $URL
 # Get filename
 FILENAME=$(basename $URL)
 
-# Rename image and update $FILENAME
+# Rename image and update $FILENAME if $APP is provided
 echo "Renaming image..."
 echo
-mv $FILENAME "$IMAGE_ID"-"$APP"-"$FILENAME"
-FILENAME="$IMAGE_ID"-"$APP"-"$FILENAME"
+if [ -n "$APP" ]; then
+    mv $FILENAME "$IMAGE_ID"-"$APP"-"$FILENAME"
+    FILENAME="$IMAGE_ID"-"$APP"-"$FILENAME"
+else
+    mv $FILENAME "$IMAGE_ID"-"$FILENAME"
+    FILENAME="$IMAGE_ID"-"$FILENAME"
+fi
+
 echo "FILENAME: $FILENAME"
 echo
+
 
 # Add K8S cloud.cfg to template
 echo "Download latest K8S cloud.cfg and scripts..."
 echo
-curl -s -o ./cloud/k8s_cloud.cfg https://gist.githubusercontent.com/fsg-gitbot/d4b80a55c744003bd5064d49db639bd0/raw/k8s-cloudinit.cfg
-curl -s -o ./cloud/scripts/per-boot/01-mount-points.sh https://gist.githubusercontent.com/fsg-gitbot/e8729b10e585992fdff35d247319d775/raw/01-mountpoints.sh
-curl -s -o ./cloud/scripts/per-boot/01-static-resolv-conf.sh https://gist.githubusercontent.com/fsg-gitbot/309947929f56abd075c644c000f01c8d/raw/01-static-resolv-conf.sh
-curl -s -o ./cloud/scripts/per-boot/01-set-hostname.sh https://gist.githubusercontent.com/fsg-gitbot/a54170a504b02e9f10be032689434646/raw/01-set-hostname.sh
-curl -s -o ./cloud/scripts/per-boot/01-set-mgmt-routes.sh https://gist.githubusercontent.com/fsg-gitbot/2eda62264e829345678662bc5477ef05/raw/01-set-mgmt-routes.sh
-echo "Making scripts executable..."
+# If $CI_URL is provided, download it
+if [ -n "$CI_URL" ]; then
+    curl -s -o ./cloud/cloud.cfg $CI_URL
+fi
+
+# If $CI_SCRIPT_STORAGE is provided, download it
+if [ -n "$CI_SCRIPT_STORAGE" ]; then
+    curl -s -o ./cloud/scripts/per-boot/01-storage.sh $CI_SCRIPT_STORAGE
+fi
+
+# If $CI_SCRIPT_HOSTNAME is provided, download it
+if [ -n "$CI_SCRIPT_HOSTNAME" ]; then
+    curl -s -o ./cloud/scripts/per-boot/02-hostname.sh $CI_SCRIPT_HOSTNAME
+fi
+
+# If $CI_SCRIPT_RESOLVCONF is provided, download it
+if [ -n "$CI_SCRIPT_RESOLVCONF" ]; then
+    curl -s -o ./cloud/scripts/per-boot/03-resolvconf.sh $CI_SCRIPT_RESOLVCONF
+fi
+
+# If $CI_SCRIPT_ROUTE is provided, download it
+if [ -n "$CI_SCRIPT_ROUTE" ]; then
+    curl -s -o ./cloud/scripts/per-boot/04-route.sh $CI_SCRIPT_ROUTE
+fi
+
+echo "Making cloud scripts executable..."
 chmod +x ./cloud/scripts/per-boot/*.sh
 
 echo
 echo "Adding K8S cloud-init customizations to image.."
 echo
-# Copy fresh cloud.cfg into current directory
-cp cloud/k8s_cloud.cfg ./cloud.cfg
-# Copy fresh cloud.cfg into snippets directory
-cp cloud/k8s_cloud.cfg /mnt/pve/nfs-ordnance/snippets/cloud.cfg
 # Push cloud-init customizations into image
 virt-customize -a $FILENAME --commands-from-file ./cloud/k8s_mods.txt
 
@@ -75,7 +119,7 @@ echo "Done"
 echo
 
 # Get image name for proxmox
-IMAGE_NAME=$(echo $FILENAME | cut -d'.' -f1 | cut -d'-' -f1-5)
+IMAGE_NAME=$(echo $FILENAME | cut -d'.' -f1-2)
 
 # Add image to proxmox
 echo "Adding image to proxmox..."
@@ -95,7 +139,7 @@ echo "Done"
 # Cleanup
 rm $FILENAME
 # Cleanup cloud.cfg
-rm cloud.cfg
+rm cloud/cloud.cfg
 # Cleanup cloud/scripts/per-boot
 rm -rf ./cloud/scripts/per-boot/*.sh
 echo

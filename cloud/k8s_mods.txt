@@ -2,32 +2,19 @@
 install qemu-guest-agent,net-tools,plocate,htop,mtr-tiny,iftop,iotop,tcpdump
 
 # Copy in the cloud-init configs
-copy-in ./cloud.cfg:/etc/cloud/
+copy-in ./cloud/cloud.cfg:/etc/cloud/
 
 # Create the per-boot script directory on template VM
 mkdir /etc/cloud/scripts/
 mkdir /etc/cloud/scripts/per-boot
 
-# Copy in the DNS fixup script - remove systemd-resolved and aliased resolv.conf
-# A jihad on systemd-resolved & a fatwa on systemd
-copy-in ./cloud/scripts/per-boot/01-static-resolv-conf.sh:/etc/cloud/scripts/per-boot/
-chmod 0777:/etc/cloud/scripts/per-boot/01-static-resolv-conf.sh
+# Copy in cloud scripts
+copy-in ./cloud/scripts/per-boot/:/etc/cloud/scripts/
 
-# Copy in the hostname script - auto set hostname based on primary NIC RDNS
-copy-in ./cloud/scripts/per-boot/01-set-hostname.sh:/etc/cloud/scripts/per-boot/
-chmod 0777:/etc/cloud/scripts/per-boot/01-set-hostname.sh
-
-# Copy in the mount points script - auto mount all additional volumes
-copy-in ./cloud/scripts/per-boot/01-mount-points.sh:/etc/cloud/scripts/per-boot/
-chmod 0777:/etc/cloud/scripts/per-boot/01-mount-points.sh
-
-# Copy in the management routes script
-copy-in ./cloud/scripts/per-boot/01-set-mgmt-routes.sh:/etc/cloud/scripts/per-boot/
-chmod 0777:/etc/cloud/scripts/per-boot/01-set-mgmt-routes.sh
 
 # Copy in environment standards to make admin life easier
-copy-in ./cloud/etc/bash.bashrc:/etc/
-copy-in ./cloud/etc/skel/.bashrc:/etc/skel/.bashrc
+#copy-in ./cloud/etc/bash.bashrc:/etc/
+copy-in ./cloud/etc/skel/.bashrc:/etc/skel/
 
 # Run APT update/upgrade on first boot
-update
+#update
