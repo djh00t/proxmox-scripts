@@ -1,5 +1,5 @@
 # Add the following apt packages to the image
-install qemu-guest-agent,net-tools,plocate,htop,mtr-tiny,iftop,iotop,tcpdump
+install qemu-guest-agent,net-tools,plocate,htop,mtr-tiny,iftop,iotop,tcpdump,nfs-common,nfs-kernel-server,open-iscsi
 
 # Copy in the cloud-init configs
 copy-in ./cloud/cloud.cfg:/etc/cloud/
@@ -9,7 +9,7 @@ mkdir /etc/cloud/scripts/
 mkdir /etc/cloud/scripts/per-boot
 
 # Copy in cloud scripts
-#copy-in ./cloud/scripts/per-boot/:/etc/cloud/scripts/
+copy-in ./cloud/scripts/per-boot/:/etc/cloud/scripts/
 
 
 # Copy in environment standards to make admin life easier
