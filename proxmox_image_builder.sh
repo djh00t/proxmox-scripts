@@ -101,9 +101,9 @@ if [ -n "$CI_SCRIPT_RESOLVCONF" ]; then
 fi
 
 # If $CI_SCRIPT_ROUTE is provided, download it
-if [ -n "$CI_SCRIPT_ROUTE" ]; then
-    curl -s -o ./cloud/scripts/per-boot/04-route.sh $CI_SCRIPT_ROUTE
-fi
+#if [ -n "$CI_SCRIPT_ROUTE" ]; then
+#    curl -s -o ./cloud/scripts/per-boot/04-route.sh $CI_SCRIPT_ROUTE
+#fi
 
 echo "Making cloud scripts executable..."
 chmod +x ./cloud/scripts/per-boot/*.sh
