@@ -39,9 +39,7 @@ function do_create_template_settings {
     qm set $VMTID --boot c --bootdisk virtio0
 
     # Set Template to use serial console
-#    qm set $VMTID --serial0 socket --vga serial0
-
-
+    qm set $VMTID --serial0 socket --vga serial0
 
     # Set Template to use qemu guest agent
     qm set $VMTID --agent enabled=1
