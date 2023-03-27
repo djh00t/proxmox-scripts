@@ -14,7 +14,7 @@ copy-in ./cloud/scripts/per-boot/:/etc/cloud/scripts/
 
 # Copy in environment standards to make admin life easier
 #copy-in ./cloud/etc/bash.bashrc:/etc/
-copy-in ./cloud/etc/skel/.bashrc:/etc/skel/
+#copy-in ./cloud/etc/skel/.bashrc:/etc/skel/
 
 # Run APT update/upgrade on first boot
 #update
