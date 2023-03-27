@@ -45,6 +45,30 @@ URL="https://cloud-images.ubuntu.com/releases/${RELEASE_NAME}/release/ubuntu-${R
 echo "URL: $URL"
 echo
 
+# Add base firewall rules to VM
+function add_firewall_rules() {
+  # Add firewall rules to VM
+  HOST=$(hostname -s)
+  VM=$IMAGE_ID
+  AUTH_HEADER=$(eval echo "\'Authorization: PVEAPIToken=$PM_API_TOKEN_ID=$PM_API_TOKEN_SECRET\'")
+  PAYLOAD1='{ "action": "k8s_internet","enable": 1,"pos": 0,"type": "group"}'
+  PAYLOAD2='{ "action": "admin_allow","enable": 1,"pos": 1,"type": "group"}'
+  PAYLOADS=( $PAYLOAD1 $PAYLOAD2 )
+  for PAYLOAD in "${PAYLOADS[@]}"; do
+    # Post the firewall rule and store response as $RESPONSE variable
+    echo "Adding firewall rule to $HOST/$VM"
+    RESPONSE=$(curl -s -X POST -k -H $AUTH_HEADER -H 'Content-Type: application/json' -d $PAYLOAD $PM_API_URL/nodes/$HOST/qemu/$VM/firewall/rules/)
+    # Check if the response is '{"data": null}' if not error out
+    if [ "$RESPONSE" != '{"data": null}' ]; then
+      echo "Error adding firewall rule to $HOST/$VM"
+      echo "Response: $RESPONSE"
+      exit 1
+    else
+      echo "Firewall rule added to $HOST/$VM"
+      fi
+  done
+}
+
 # Get highest vm id from proxmox
 HIGHEST_ID=$(qm list | tail -n +2 | awk '{print $1}' | sort -n | tail -n 1)
 
@@ -135,6 +159,9 @@ echo
 pvesh set /nodes/`echo $HOSTNAME | cut -d'.' -f1`/qemu/$IMAGE_ID/firewall/options -enable 1
 echo 
 echo "Done"
+
+# Add base firewall rules to vm
+add_firewall_rules
 
 # Cleanup
 rm $FILENAME
