@@ -50,22 +50,22 @@ function add_firewall_rules() {
   # Add firewall rules to VM
   HOST=$(hostname -s)
   VM=$IMAGE_ID
-  AUTH_HEADER=$(eval echo "\'Authorization: PVEAPIToken=$PM_API_TOKEN_ID=$PM_API_TOKEN_SECRET\'")
-  PAYLOAD1='{ "action": "k8s_internet","enable": 1,"pos": 0,"type": "group"}'
-  PAYLOAD2='{ "action": "admin_allow","enable": 1,"pos": 1,"type": "group"}'
-  PAYLOADS=( $PAYLOAD1 $PAYLOAD2 )
-  for PAYLOAD in "${PAYLOADS[@]}"; do
-    # Post the firewall rule and store response as $RESPONSE variable
-    echo "Adding firewall rule to $HOST/$VM"
-    RESPONSE=$(curl -s -X POST -k -H $AUTH_HEADER -H 'Content-Type: application/json' -d $PAYLOAD $PM_API_URL/nodes/$HOST/qemu/$VM/firewall/rules/)
-    # Check if the response is '{"data": null}' if not error out
-    if [ "$RESPONSE" != '{"data": null}' ]; then
-      echo "Error adding firewall rule to $HOST/$VM"
-      echo "Response: $RESPONSE"
-      exit 1
+  AUTH_HEADER=$(echo "Authorization: PVEAPIToken=$PM_API_TOKEN_ID=$PM_API_TOKEN_SECRET")
+  RULE_1=$(echo curl -s -X POST -k -H \'$AUTH_HEADER\' -H \'Content-Type: application/json\' -d \'{\"action\": \"admin_allow\",\"node\": \"$HOST\",\"vmid\": \"$VM\",\"enable\": 1,\"pos\": 0,\"type\": \"group\",\"comment\": \"Allow admins to access VM $VM\"}\' $PM_API_URL/nodes/$HOST/qemu/$VM/firewall/rules/)
+  RULE_2=$(echo curl -s -X POST -k -H \'$AUTH_HEADER\' -H \'Content-Type: application/json\' -d \'{\"action\": \"k8s_internet\",\"node\": \"$HOST\",\"vmid\": \"$VM\",\"enable\": 1,\"pos\": 1,\"type\": \"group\",\"comment\": \"Standard K8S Internet Ruleset\"}\' $PM_API_URL/nodes/$HOST/qemu/$VM/firewall/rules/)
+  # Push payloads at API
+    A=$(eval $RULE_1)
+    B=$(eval $RULE_2)
+
+    ARR=($A $B)
+    for num in ${ARR[@]};do
+    # Check if API call was successful
+    if [[ $(echo $num | jq -r '.data') == "null" ]]; then
+        echo "API call successful"
     else
-      echo "Firewall rule added to $HOST/$VM"
-      fi
+        echo "API call failed"
+        echo $num
+    fi
   done
 }
 
@@ -125,9 +125,9 @@ if [ -n "$CI_SCRIPT_RESOLVCONF" ]; then
 fi
 
 # If $CI_SCRIPT_ROUTE is provided, download it
-#if [ -n "$CI_SCRIPT_ROUTE" ]; then
-#    curl -s -o ./cloud/scripts/per-boot/04-route.sh $CI_SCRIPT_ROUTE
-#fi
+if [ -n "$CI_SCRIPT_ROUTE" ]; then
+    curl -s -o ./cloud/scripts/per-boot/04-route.sh $CI_SCRIPT_ROUTE
+fi
 
 echo "Making cloud scripts executable..."
 chmod +x ./cloud/scripts/per-boot/*.sh

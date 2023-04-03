@@ -33,7 +33,7 @@ function do_create_template_settings {
     # qm set $VMTID --cicustom user=nfs-ordnance:snippets/k8s-user-config.yaml --citype nocloud
 
     # Set Template to use CloudInit
-    qm set $VMTID --ide2 nfs-ordnance:cloudinit
+    qm set $VMTID --sata0 nfs-ordnance:cloudinit
 
     # Set Template boot order so virtio0 is first
     qm set $VMTID --boot c --bootdisk virtio0
@@ -61,7 +61,7 @@ function do_create_template_settings {
 
     # Assign keys to root user
     qm set $VMTID --ciuser root --sshkey /tmp/keys
-    
+
     # Assign keys to ord user
     qm set $VMTID --ciuser ord --sshkey /tmp/keys
 
