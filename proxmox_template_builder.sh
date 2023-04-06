@@ -19,10 +19,10 @@ function do_create_template {
 
 function do_create_template_disk {
     # Create Disk for Template
-    qm importdisk $VMTID $IMG $STORAGE
+    qm importdisk $VMTID $IMG $STORAGE --format qcow2
 
     # Attach Disk to Template
-    qm set $VMTID --scsihw virtio-scsi-pci --virtio0 $STORAGE:$VMTID/vm-$VMTID-disk-0.raw
+    qm set $VMTID --scsihw virtio-scsi-pci --virtio1 $STORAGE:$VMTID/vm-$VMTID-disk-0.qcow2
 
     echo do_create_template_disk finished
     sleep 5
@@ -35,8 +35,8 @@ function do_create_template_settings {
     # Set Template to use CloudInit
     qm set $VMTID --sata0 nfs-ordnance:cloudinit
 
-    # Set Template boot order so virtio0 is first
-    qm set $VMTID --boot c --bootdisk virtio0
+    # Set Template boot order so virtio1 is first
+    qm set $VMTID --boot c --bootdisk virtio1
 
     # Set Template to use serial console
     qm set $VMTID --serial0 socket --vga serial0
@@ -57,18 +57,13 @@ function do_create_template_settings {
     qm set $VMTID --searchdomain="mgmt.mx"
 
     # Add ssh keys
-    curl -s -o /tmp/keys https://gist.githubusercontent.com/djh00t/a44820a5ffd626a8fb679b9144c9e2e5/raw/c87333652708d5dad027c1821c91b030ebb032fc/authorized_keys.pub
+    curl -s -o /tmp/keys https://gist.githubusercontent.com/fsg-gitbot/564176b322dee68c1b1357100393e717/raw/20230313-fsg-pkeys-list.pub
 
     # Assign keys to root user
     qm set $VMTID --ciuser root --sshkey /tmp/keys
 
     # Assign keys to ord user
     qm set $VMTID --ciuser ord --sshkey /tmp/keys
-
-
-
-    # Assign ordadmin ssh key to the template
-    # qm set $VMTID --sshkey /root/.ssh/ordadmin.id_rsa.pub
 
     # Make into a Template
     sudo qm template $VMTID

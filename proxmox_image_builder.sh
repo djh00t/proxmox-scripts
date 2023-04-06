@@ -80,20 +80,29 @@ echo
 echo "IMAGE_ID: $IMAGE_ID"
 echo
 
-# Download image
-wget $URL
-
 # Get filename
 FILENAME=$(basename $URL)
+
+# Download image if $FILENAME does not already exist in current directory
+if [ ! -f "$FILENAME" ]; then
+    echo "Downloading image..."
+    echo
+    wget $URL
+else
+    echo "Image already exists in current directory"
+    echo
+fi
+
+
 
 # Rename image and update $FILENAME if $APP is provided
 echo "Renaming image..."
 echo
 if [ -n "$APP" ]; then
-    mv $FILENAME "$IMAGE_ID"-"$APP"-"$FILENAME"
+    cp $FILENAME "$IMAGE_ID"-"$APP"-"$FILENAME"
     FILENAME="$IMAGE_ID"-"$APP"-"$FILENAME"
 else
-    mv $FILENAME "$IMAGE_ID"-"$FILENAME"
+    cp $FILENAME "$IMAGE_ID"-"$FILENAME"
     FILENAME="$IMAGE_ID"-"$FILENAME"
 fi
 
