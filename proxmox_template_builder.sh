@@ -33,18 +33,15 @@ function do_create_template_settings {
     # qm set $VMTID --cicustom user=nfs-ordnance:snippets/k8s-user-config.yaml --citype nocloud
 
     # Set Template to use CloudInit
-    qm set $VMTID --sata0 nfs-ordnance:cloudinit
+    qm set $VMTID --virtio0 nfs-ordnance:cloudinit
 
     # Set Template boot order so virtio1 is first
     qm set $VMTID --boot c --bootdisk virtio1
 
     # Set Template to use serial console
     qm set $VMTID --serial0 socket --vga serial0
-<<<<<<< HEAD
-=======
 
 
->>>>>>> c30d0a1 (move VGA to serial)
 
     # Set Template to use qemu guest agent
     qm set $VMTID --agent enabled=1
