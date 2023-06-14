@@ -140,6 +140,8 @@ fi
 
 echo "Making cloud scripts executable..."
 chmod +x ./cloud/scripts/per-boot/*.sh
+echo "Giving root:cloud ownership of cloud scripts..."
+chown -R root:999 ./cloud
 
 echo
 echo "Adding K8S cloud-init customizations to image.."
