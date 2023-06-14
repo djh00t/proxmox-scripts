@@ -22,7 +22,7 @@ function do_create_template_disk {
     qm importdisk $VMTID $IMG $STORAGE --format qcow2
 
     # Attach Disk to Template
-    qm set $VMTID --scsihw virtio-scsi-pci --virtio1 $STORAGE:$VMTID/vm-$VMTID-disk-0.qcow2
+    qm set $VMTID --scsihw virtio-scsi-pci --virtio9 $STORAGE:$VMTID/vm-$VMTID-disk-0.qcow2
 
     echo do_create_template_disk finished
     sleep 5
@@ -33,10 +33,10 @@ function do_create_template_settings {
     # qm set $VMTID --cicustom user=nfs-ordnance:snippets/k8s-user-config.yaml --citype nocloud
 
     # Set Template to use CloudInit
-    qm set $VMTID --virtio0 nfs-ordnance:cloudinit
+    qm set $VMTID --ide3 nfs-ordnance:cloudinit
 
-    # Set Template boot order so virtio1 is first
-    qm set $VMTID --boot c --bootdisk virtio1
+    # Set Template boot order so virtio0 is first
+    qm set $VMTID --boot order=virtio0
 
     # Set Template to use serial console
     qm set $VMTID --serial0 socket --vga serial0
