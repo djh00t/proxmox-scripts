@@ -29,9 +29,6 @@ function do_create_template_disk {
 }
 
 function do_create_template_settings {
-    # Set Template to use custom cloudinit user file
-    # qm set $VMTID --cicustom user=nfs-ordnance:snippets/k8s-user-config.yaml --citype nocloud
-
     # Set Template to use CloudInit
     qm set $VMTID --ide3 nfs-ordnance:cloudinit
 
