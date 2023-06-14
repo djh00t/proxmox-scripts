@@ -178,4 +178,3 @@ fi
 do_create_template
 do_create_template_disk
 do_create_template_settings
-
