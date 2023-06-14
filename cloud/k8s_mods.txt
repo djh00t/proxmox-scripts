@@ -5,7 +5,7 @@ install qemu-guest-agent,net-tools,plocate,htop,mtr-tiny,iftop,iotop,tcpdump,nfs
 uninstall needrestart
 
 # Create cloud group
-run-command 'groupadd -g 999 cloud'
+run-command 'echo "cloud:x:999:root" >> /etc/group'
 
 # Copy in the cloud-init configs
 copy-in ./cloud/cloud.cfg:/etc/cloud/
