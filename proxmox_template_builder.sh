@@ -22,7 +22,7 @@ function do_create_template_disk {
     qm importdisk $VMTID $IMG $STORAGE --format qcow2
 
     # Attach Disk to Template
-    qm set $VMTID --scsihw virtio-scsi-pci --virtio9 $STORAGE:$VMTID/vm-$VMTID-disk-0.qcow2
+    qm set $VMTID --scsihw virtio-scsi-pci --virtio0 $STORAGE:$VMTID/vm-$VMTID-disk-0.qcow2
 
     echo do_create_template_disk finished
     sleep 5
