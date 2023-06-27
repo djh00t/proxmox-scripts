@@ -4,25 +4,19 @@ install qemu-guest-agent,net-tools,plocate,htop,mtr-tiny,iftop,iotop,tcpdump,nfs
 # Remove the following apt packages from the image
 uninstall needrestart
 
-# Create cloud group
-run-command 'echo "cloud:x:999:root" >> /etc/group'
-
 # Copy in the cloud-init configs
 copy-in ./cloud/cloud.cfg:/etc/cloud/
 
 # Create the per-boot script directory on template VM
-mkdir /etc/cloud/scripts/
-mkdir /etc/cloud/scripts/per-boot
+#mkdir /etc/cloud/scripts/
+#mkdir /etc/cloud/scripts/per-boot
 
 # Copy in cloud scripts
 copy-in ./cloud/scripts/per-boot/:/etc/cloud/scripts/
 
-# Set cloud group permissions on cloud directory
-run-command 'chgrp -R cloud /etc/cloud/'
-
 # Copy in environment standards to make admin life easier
-#copy-in ./cloud/etc/bash.bashrc:/etc/
-#copy-in ./cloud/etc/skel/.bashrc:/etc/skel/
+copy-in ./cloud/etc/bash.bashrc:/etc/
+copy-in ./cloud/etc/skel/.bashrc:/etc/skel/
 
 # Run APT update/upgrade on first boot
 # update
